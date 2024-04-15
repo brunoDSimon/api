@@ -1,20 +1,22 @@
 import { BadRequestException, Injectable, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { Prisma, User } from '@prisma/client';
-import { PrismaService } from 'src/prisma/service/prisma.service';
 import { AuthResetDTO } from './DTO/auth-reset.dto';
 import { UserService } from 'src/user/user/user.service';
 import { authRegisterDTO } from './DTO/auth-register.dto';
 import { AuthGuard } from 'src/guards/auth/auth.guard';
 import * as bcrypt from 'bcrypt'
 import { MailerService } from '@nestjs-modules/mailer';
+import { User } from 'src/user/entity/user.entity';
+import { Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
 @Injectable()
 export class AuthService {
     constructor(
         private readonly jwtService: JwtService,
-        private prismaService: PrismaService,
         private userService: UserService,
-        private mailer: MailerService
+        private mailer: MailerService,
+        @InjectRepository(User)
+        private usersRepository: Repository<User>
         ) {}
 
         async createToken(user:User) {
@@ -55,7 +57,7 @@ export class AuthService {
         }
 
         async login(email: string, password:string) {
-            let result = await this.prismaService.user.findFirst({
+            let result = await this.usersRepository.findOne({
                 where: {
                     email: email
                 }
@@ -71,7 +73,7 @@ export class AuthService {
             }
         }
         async forget(email:string) {
-            const result = await this.prismaService.user.findFirst({
+            const result = await this.usersRepository.findOne({
                 where: {
                     email
                 }
@@ -112,14 +114,12 @@ export class AuthService {
                  if(isNaN(Number(dados.id))) {
                     throw new BadRequestException('token invalido')
                  }
-                let user = await this.prismaService.user.update({
-                    where: {
-                        id: dados.id
-                    },
-                    data : {
-                        password
-                    }
+                 this.usersRepository.update(Number(dados.id),{
+                  password
                 });
+                let user = await this.usersRepository.findOne({where: {
+                    id: Number(dados.id)
+                }})
                 return this.createToken(user)
             } catch (error) {
                 throw new BadRequestException()

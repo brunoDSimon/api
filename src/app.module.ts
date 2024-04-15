@@ -2,7 +2,6 @@ import { MiddlewareConsumer, Module, NestModule, RequestMethod, forwardRef } fro
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UserModule } from './user/user.module';
-import { PrismaModule } from './prisma/prisma.module';
 import { UserIdCheckMiddleware } from './middlewares/users-id.check.middleware';
 import { AuthModule } from './auth/auth.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
@@ -11,6 +10,8 @@ import { ConfigModule } from '@nestjs/config';
 import { FileModule } from './file/file.module';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { PugAdapter } from '@nestjs-modules/mailer/dist/adapters/pug.adapter';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { User } from './user/entity/user.entity';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -46,6 +47,17 @@ import { PugAdapter } from '@nestjs-modules/mailer/dist/adapters/pug.adapter';
         },
       },
     }),
+    TypeOrmModule.forRoot({
+      type: `mysql`,
+      host: `localhost`,
+      username: `root`, 
+      port: 3306,
+      database:`api`,
+      password: "root",
+      
+      entities: [User ],
+      synchronize: true
+    })
   ],
   controllers: [AppController],
   providers: [AppService,
